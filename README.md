@@ -2,16 +2,18 @@
 
 > **End-to-end ML pipeline** for loan default prediction using XGBoost + SHAP explainability — deployed as a real-time Streamlit app.
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue) ![XGBoost](https://img.shields.io/badge/XGBoost-3.2-orange) ![SHAP](https://img.shields.io/badge/SHAP-Explainability-green) ![Streamlit](https://img.shields.io/badge/Streamlit-App-red)
+![Python](https://img.shields.io/badge/Python-3.10+-blue) ![XGBoost](https://img.shields.io/badge/XGBoost-3.2-orange) ![SHAP](https://img.shields.io/badge/SHAP-Explainability-green) ![Streamlit](https://img.shields.io/badge/Streamlit-App-red) ![Dataset](https://img.shields.io/badge/Dataset-307K%20loans-lightgrey)
 
 ---
 
 ## 🎯 Problem Statement
 
-Traditional credit scoring is opaque and misses modern financial signals. This project builds a transparent, ML-powered credit risk system that:
-- Predicts **loan default probability** with 88%+ AUC-ROC
-- **Explains every decision** using SHAP (which factors drove the risk)
-- Deploys as a **live web app** for real-time scoring
+Traditional credit scoring is opaque and misses modern financial signals. Lenders can't just say "the model said no" — regulators and customers need a reason. This project builds a **transparent, ML-powered credit risk system** that:
+
+- Predicts **loan default probability** on 307,511 real loan applications
+- **Explains every decision** using SHAP — which factors drove the risk score and by how much
+- Quantifies **business impact** in ₹ terms, not just model accuracy
+- Deploys as a **live web app** for real-time applicant scoring
 
 ---
 
@@ -19,9 +21,45 @@ Traditional credit scoring is opaque and misses modern financial signals. This p
 
 | Model | AUC-ROC | F1 Score | Avg Precision |
 |---|---|---|---|
-| Logistic Regression (baseline) | ~0.73 | ~0.31 | ~0.22 |
-| Random Forest | ~0.76 | ~0.38 | ~0.28 |
-| **XGBoost + SMOTE** | **~0.88** | **~0.55** | **~0.48** |
+| Logistic Regression (baseline) | 0.7493 | 0.0245 | 0.2366 |
+| **XGBoost + SMOTE** | **0.7375** | **0.0796** | **0.2054** |
+
+> **Note:** AUC of 0.74 is the realistic ceiling for `application_train.csv` alone.
+> Top Kaggle scores use 7+ supplementary files; this project focuses on the full ML
+> engineering pipeline — EDA → feature engineering → explainability → deployment.
+
+---
+
+## 💰 Business Impact
+
+Based on test set evaluation (61,503 loans, avg loan size ₹5.99L):
+
+| Metric | Value |
+|---|---|
+| Defaults correctly caught | 222 loans |
+| Estimated loss prevented | ₹9.31 Cr |
+| Net estimated value (test set) | ₹8.99 Cr |
+| **Scaled to full dataset** | **₹44.95 Cr** |
+
+> *Assumptions: 70% loss rate on defaulted loans, 30% of annuity as interest revenue*
+
+---
+
+## 🔍 SHAP Explainability
+
+Every prediction comes with a plain-English explanation:
+
+```
+High-risk applicant (63.1% default probability):
+  • Average external credit score = 0.31 → increased default risk (SHAP: +0.18)
+  • Debt-to-income ratio = 0.52 → increased default risk (SHAP: +0.12)
+  • Employment history = 1.2 years → increased default risk (SHAP: +0.09)
+
+Low-risk applicant (0.4% default probability):
+  • Average external credit score = 0.78 → decreased default risk (SHAP: -0.21)
+  • Applicant age = 52 years → decreased default risk (SHAP: -0.08)
+  • Employment stability = 0.71 → decreased default risk (SHAP: -0.06)
+```
 
 ---
 
@@ -29,25 +67,34 @@ Traditional credit scoring is opaque and misses modern financial signals. This p
 
 ```
 credit-risk-predictor/
-├── data/
-│   ├── raw/                    # Raw Kaggle data (gitignored)
-│   └── processed/              # Cleaned, engineered features
 ├── notebooks/
-│   ├── 01_eda_and_features.ipynb   ← Week 1: EDA + Feature Engineering
-│   ├── 02_modelling.ipynb          ← Week 2: Model Training
-│   ├── 03_shap_explainability.ipynb← Week 3: SHAP Analysis
-│   └── 04_evaluation.ipynb         ← Week 3: Full Evaluation
+│   ├── week1_colab.ipynb        ← EDA + 12 engineered features
+│   ├── week2_colab_fixed.ipynb  ← XGBoost + SMOTE training
+│   └── week3_colab.ipynb        ← SHAP explainability + business impact
 ├── src/
-│   ├── features.py             # Feature engineering pipeline
-│   ├── train.py                # Model training script
-│   └── predict.py              # Inference + SHAP
+│   ├── features.py              # Feature engineering pipeline (reusable)
+│   ├── train.py                 # Model training script
+│   └── predict.py               # Inference + SHAP for the app
 ├── app/
-│   └── streamlit_app.py        # Week 4: Deployed web app
-├── models/
-│   └── xgb_final.pkl           # Saved model
-├── reports/                    # Saved plots
+│   └── streamlit_app.py         # Live web app (Week 4)
+├── data/
+│   └── raw/                     # Raw Kaggle data (gitignored)
 └── requirements.txt
 ```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Tools |
+|---|---|
+| Data & EDA | Pandas, NumPy, Seaborn, Matplotlib |
+| Feature Engineering | 12 domain-driven financial features |
+| ML Model | XGBoost, Scikit-learn |
+| Class Imbalance | SMOTE (imbalanced-learn) |
+| Explainability | SHAP (TreeExplainer, waterfall + beeswarm plots) |
+| App | Streamlit |
+| Dataset | Home Credit Default Risk (Kaggle) |
 
 ---
 
@@ -59,52 +106,37 @@ pip install -r requirements.txt
 ```
 
 ### 2. Download dataset
-Get `application_train.csv` from [Kaggle](https://www.kaggle.com/c/home-credit-default-risk/data) → place in `data/raw/`
+Get `application_train.csv` from [Kaggle](https://www.kaggle.com/c/home-credit-default-risk/data)
 
-### 3. Run EDA (Week 1)
-```bash
-jupyter notebook notebooks/01_eda_and_features.ipynb
+### 3. Run notebooks in order
+```
+notebooks/week1_colab.ipynb   → EDA + feature engineering
+notebooks/week2_colab_fixed.ipynb  → Model training
+notebooks/week3_colab.ipynb   → SHAP explainability
 ```
 
-### 4. Train model (Week 2)
-```bash
-python src/train.py
-```
-
-### 5. Run the app (Week 4)
+### 4. Run the app (after Week 4)
 ```bash
 streamlit run app/streamlit_app.py
 ```
 
 ---
 
-## 🔍 Key Features
-
-- **12 engineered financial features** (DTI ratio, credit-to-income, employment stability)
-- **SMOTE** to handle severe class imbalance (~8% default rate)
-- **SHAP waterfall plots** explaining individual predictions
-- **MLflow** experiment tracking
-- **Streamlit app** with plain-English risk explanation
-
----
-
-## 📈 Business Impact
-
-> Estimated ₹X Cr in prevented defaults on test set  
-> *(Calculate: true_positives × avg_loan_size after training)*
-
----
-
-## 🛠️ Tech Stack
-
-`Python` · `XGBoost` · `scikit-learn` · `SHAP` · `SMOTE` · `Streamlit` · `MLflow` · `Pandas` · `Seaborn`
-
----
-
 ## 📌 Dataset
 
-[Home Credit Default Risk](https://www.kaggle.com/c/home-credit-default-risk) — 307K loan applications, 122 features
+[Home Credit Default Risk](https://www.kaggle.com/c/home-credit-default-risk) — 307,511 loan applications, 122 raw features, 8.07% default rate
 
 ---
 
-*Built as a portfolio project to demonstrate end-to-end ML engineering for FinTech.*
+## 🗓️ Built Week by Week
+
+| Week | Focus | Key Output |
+|---|---|---|
+| 1 | EDA + Feature Engineering | 12 financial features, class imbalance analysis |
+| 2 | Model Training | XGBoost + SMOTE, AUC 0.74 |
+| 3 | SHAP Explainability | Waterfall plots, ₹44.95Cr business impact |
+| 4 | Streamlit App | Live demo deployment *(coming soon)* |
+
+---
+
+*Built to demonstrate end-to-end ML engineering for FinTech — from raw data to deployed, explainable predictions.*
