@@ -4,6 +4,8 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue) ![XGBoost](https://img.shields.io/badge/XGBoost-3.2-orange) ![SHAP](https://img.shields.io/badge/SHAP-Explainability-green) ![Streamlit](https://img.shields.io/badge/Streamlit-App-red) ![Dataset](https://img.shields.io/badge/Dataset-307K%20loans-lightgrey)
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Hugging%20Face-yellow)](https://huggingface.co/spaces/igniz123/credit-risk-predictor)
+
 ---
 
 ## 🎯 Problem Statement
